@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Particle Animation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="container"></div>
+
+    <script>
+        
+        const THICKNESS = Math.pow(80, 2); // Interaction radius (squared for efficiency)
+        const COLOR = 220; // Color of the particles
+        const DRAG = 0.95; // Damping for particle movement
+        const EASE = 0.25; // Ease factor for return-to-origin movement
+
+        let container, canvas, ctx, particles, mouseX, mouseY, width, height;
+
+        // Particle template
+        const particle = {
+            x: 0, y: 0, vx: 0, vy: 0, ox: 0, oy: 0
+        };
+
+        function init() {
+            container = document.getElementById('container');
+            canvas = document.createElement('canvas');
+            ctx = canvas.getContext('2d');
+            container.appendChild(canvas);
+
+            particles = [];
+            mouseX = mouseY = 0;
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            createParticles(); // Create initial particle grid
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+            });
+
+            canvas.addEventListener('click', () => {
+                spreadParticles(); // Reposition particles on click
+            });
+
+            animate();
+        }
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function createParticles() {
+    const gridWidth = 800; // Desired grid width in pixels
+    const gridHeight = 400; // Desired grid height in pixels
+    const spacing = 5; // Spacing between particles
+
+    const cols = Math.floor(gridWidth / spacing); // Number of columns
+    const rows = Math.floor(gridHeight / spacing); // Number of rows
+
+    const xOffset = (width - gridWidth) / 2; // Center grid horizontally
+    const yOffset = (height - gridHeight) / 2; // Center grid vertically
+
+    particles = []; // Reset particles
+
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            const p = Object.create(particle);
+            p.x = p.ox = col * spacing + xOffset; // Offset for centering
+            p.y = p.oy = row * spacing + yOffset;
+            particles.push(p);
+        }
+    }
+}
+
+
+        function spreadParticles() {
+            particles.forEach((p) => {
+                p.ox = Math.random() * width; // New random x-origin
+                p.oy = Math.random() * height; // New random y-origin
+            });
+        }
+
+        function drawBackgroundText() {
+            ctx.save();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'; // Semi-transparent white text
+            ctx.font = 'bold 100px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Click to Spread', width / 2, height / 2);
+            ctx.restore();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height); // Clear the canvas for each frame
+
+            // Draw background text
+            drawBackgroundText();
+
+            particles.forEach((p) => {
+                const dx = mouseX - p.x;
+                const dy = mouseY - p.y;
+                const distSquared = dx * dx + dy * dy;
+
+                if (distSquared < THICKNESS) {
+                    const force = -THICKNESS / distSquared;
+                    const angle = Math.atan2(dy, dx);
+                    p.vx += force * Math.cos(angle);
+                    p.vy += force * Math.sin(angle);
+                }
+
+                p.vx *= DRAG;
+                p.vy *= DRAG;
+
+                p.x += p.vx + (p.ox - p.x) * EASE;
+                p.y += p.vy + (p.oy - p.y) * EASE;
+
+                ctx.fillStyle = `rgb(${COLOR}, ${COLOR}, ${COLOR})`;
+                ctx.fillRect(p.x, p.y, 2, 2); // Slightly larger particles for visibility
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        init();
+    </script>
+</body>
+</html>
